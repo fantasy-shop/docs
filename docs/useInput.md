@@ -112,7 +112,7 @@ function useInput(initialValue, validator) {
     // validator(maxLen)를 사용한 업데이트
     let willUpdate = true;
 
-    if (typeof validator === 'function') {
+    if (typeof validator === 'function') {   // validator가 함수인지 확인하고, 맞다면 validator(value)를 실행해서, 그 결과(true or false)에 따라 업데이트 여부 결정
       willUpdate = validator(value);         // validator가 false를 반환하면 업데이트 방지
     }
 
