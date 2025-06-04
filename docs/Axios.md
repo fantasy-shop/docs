@@ -191,3 +191,190 @@ setProducts(res.data);
 
 `products` 상태가 바뀌면 React는 컴포넌트를 자동으로 다시 렌더링합니다.  
 즉, 화면에 상품 목록이 나타나는 거예요.
+
+---
+
+## Axios Instance란?
+
+**Axios를 커스터마이징해서 만들어 놓은 사본**입니다.
+
+---
+
+## Axios Instance가 필요한 이유?
+
+기본 사용법은 간단하지만, 요청을 여러 번 보내야 할 때 **매번 같은 설정을 반복하게 되는 문제**가 있어요.
+
+예를 들어 요청할 때마다 다음과 같은 설정을 반복해야 한다면 매우 불편하고, 코드도 지저분해집니다:
+
+- 같은 API 주소 (`baseURL`)
+- 같은 헤더 (예: 인증 토큰)
+- 같은 응답 처리 방식
+
+이런 경우를 해결하기 위해 **Axios Instance를 만들면**, 공통 설정을 미리 정의해두고 **필요할 때마다 꺼내 써서 코드의 재사용성과 가독성을 높일 수 있습니다.**
+
+---
+
+## 예시 코드: Axios 인스턴스 만들기
+
+```javascript
+// src/api/axiosInstance.js
+import axios from 'axios';
+
+// axios 인스턴스 생성
+const instance = axios.create({
+  baseURL: 'https://shopping.com/api',   // 모든 요청의 기본 URL
+  timeout: 5000,                          // 요청 타임아웃 (5초)
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer my-token',  // 공통으로 붙일 토큰
+  },
+});
+
+export default instance;
+```
+
+## 예시 코드: 인스턴스 사용하기
+
+```javascript
+// ProductList.jsx
+import React, { useEffect, useState } from 'react';
+import api from './api/axiosInstance'; // 위에서 만든 인스턴스 불러오기
+
+function ProductList() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    api.get('/products') // baseURL이 있기 때문에 경로만 적으면 됨
+      .then((res) => {
+        setProducts(res.data);
+      })
+      .catch((err) => {
+        console.error('에러:', err);
+      });
+  }, []);
+
+  return (
+    <ul>
+      {products.map(p => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+실무에서는 거의 항상 인스턴스를 만들어서 사용한다고 합니다.
+
+---
+
+## Axios 인스턴스 vs 커스텀 훅
+
+### 공통점: **"중복을 줄이고, 재사용하기 위한 도구"**
+
+| 목적         | Axios 인스턴스                           | 커스텀 훅                                 |
+|--------------|-------------------------------------------|-------------------------------------------|
+| 중복 제거     | 반복되는 API 설정 제거                    | 반복되는 상태 관리/로직 제거              |
+| 재사용 가능   | 여러 곳에서 동일 설정으로 요청 가능       | 여러 컴포넌트에서 동일 로직 재사용 가능   |
+| 유지보수 쉬움 | 설정을 한 곳에서 변경 가능               | 로직을 한 곳에서 관리 가능                |
+
+---
+
+### 차이점: **"무엇을 위한 도구냐"가 다름**
+
+| 구분             | Axios 인스턴스                         | 커스텀 훅                                 |
+|------------------|----------------------------------------|-------------------------------------------|
+| 대상             | HTTP 요청 자체의 설정                  | 리액트 컴포넌트 안의 로직                |
+| 형태             | 함수 객체 (`axios.create()`)           | React Hook (`useXxx()`)                  |
+| 쓰는 환경        | Axios 기반의 네트워크 계층             | React 컴포넌트 내부                       |
+| 상태(state)와 관계 | 상태 없음                             | 상태와 밀접 (예: `useState`, `useEffect`) |
+
+---
+
+### 결론 요약
+
+- **Axios 인스턴스**: 요청 설정(주소, 헤더 등)을 묶는 도구  
+- **커스텀 훅**: 리액트 안에서 로직과 상태를 묶는 도구  
+➡️ **함께 사용하면 매우 효율적입니다!**
+
+---
+
+### Axios 인스턴스 + 커스텀 훅: 실전에서 유용한 설계
+
+쇼핑몰 프로젝트처럼 여러 컴포넌트에서 API 요청이 자주 반복되는 경우,  
+**커스텀 훅 + Axios 인스턴스 조합**이 좋은 설계 방식입니다.
+
+- **중복 제거**: 같은 API 요청 코드가 여기저기 흩어지지 않음  
+- **깔끔한 컴포넌트**: 컴포넌트는 UI만 담당, 로직은 훅에 위임  
+- **유지보수 용이**: API 주소 바뀌어도 훅만 고치면 됨  
+- **테스트 쉬움**: 가짜 데이터를 주입해서 테스트 가능  
+
+---
+
+### 커스텀 훅으로 만들면 좋은 API 요청 예시
+
+| 기능                     | 커스텀 훅 이름                 | 설명                                |
+|--------------------------|-------------------------------|-------------------------------------|
+| 상품 목록 가져오기        | `useProducts()`               | 메인/카테고리 페이지 등에서 사용    |
+| 상품 상세 정보 가져오기   | `useProductDetail(productId)` | 상세 페이지용                        |
+| 장바구니 가져오기         | `useCart()`                   | 장바구니 페이지                     |
+| 사용자 정보 가져오기      | `useUser()`                   | 마이페이지, 로그인 후 헤더 등       |
+| 주문 내역 불러오기        | `useOrders()`                 | 주문 목록 페이지                    |
+| 검색 결과 가져오기        | `useSearch(query)`            | 검색 페이지                         |
+
+---
+
+## 예시 코드: `useProducts()` 훅
+
+```javascript
+// src/hooks/useProducts.js
+import { useEffect, useState } from 'react';
+import api from '../api/axiosInstance'; // 만든 인스턴스 사용
+
+function useProducts() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true); // 로딩 상태
+  const [error, setError] = useState(null);     // 에러 상태
+
+  useEffect(() => {
+    api.get('/products')
+      .then((res) => setProducts(res.data))
+      .catch((err) => setError(err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return { products, loading, error };
+}
+
+export default useProducts;
+```
+
+## 사용 예시: `useProducts()` 훅을 컴포넌트에서 사용하기
+
+```javascript
+// src/pages/ProductList.jsx
+import useProducts from '../hooks/useProducts';
+
+function ProductList() {
+  const { products, loading, error } = useProducts();
+
+  if (loading) return <p>로딩 중...</p>;
+  if (error) return <p>에러 발생: {error.message}</p>;
+
+  return (
+    <ul>
+      {products.map((p) => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## 대략적인 구조
+```css
+src/
+├── api/
+│   └── axiosInstance.js   ← Axios 인스턴스 설정
+├── hooks/
+│   └── useProducts.js     ← 상품 목록
+├── pages/
+```
