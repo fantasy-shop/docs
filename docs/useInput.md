@@ -147,7 +147,23 @@ export default useInput;
 ```
 - 사용 예시
 ```jsx
-const nameInput = useInput("Mr.", maxLen);
+import React from 'react';
+import useInput from './useInput'; // 커스텀 훅 임포트
 
-<input type="text" {...nameInput.bind} />
+// 예: 최대 길이 10자 제한 validator
+const maxLen = (value) => value.length <= 10;
+
+function ExampleComponent() {
+  const nameInput = useInput("Mr.", maxLen);
+
+  return (
+    <div>
+      <input type="text" {...nameInput.bind} />
+      <button onClick={nameInput.reset}>Reset</button>
+      <p>입력값: {nameInput.value}</p>
+    </div>
+  );
+}
+
+export default ExampleComponent;
 ```
